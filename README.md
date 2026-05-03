@@ -1,8 +1,14 @@
-# Projeto Integrador Machine Learning (ML)
+# Microsserviço de ML — Projeto (v2)
 
-Código casca em FastAPI para o componente de Machine Learning do projeto integrador do 6º período. Cada equipe escolhe **um** dos quatro blocos disponíveis e o adapta ao domínio do seu projeto.
+Código casca em FastAPI para o componente de Machine Learning do projeto integrador. **Esta versão (v2)** introduz uma camada de fontes de dados (`app/datasources/`) que permite o mesmo código rodar em três cenários:
 
-> **Importante:** este projeto é uma **casca** intencional. Há `TODO`s em pontos-chave que vocês devem implementar. As partes prontas (estrutura, endpoints, persistência, validação) servem para que vocês foquem no que importa: dados, modelo e métricas.
+| Fonte | Quem usa | Como ativar |
+|-------|----------|-------------|
+| **CSV local** | Qualquer equipe (recomendado para EDA) | `DATASOURCE_KIND = "csv"` (padrão) |
+| **Banco de dados** | Grupo 1 (com aplicação web e BD próprios) | `DATASOURCE_KIND = "database"` |
+| **API pública** | Grupo 2 (sem app web; consome IBGE/PRF/etc.) | `DATASOURCE_KIND = "api"` |
+
+> **Importante:** este projeto é uma casca intencional. Há `TODO`s em pontos-chave que vocês devem implementar. As partes prontas (estrutura, endpoints, persistência, validação) servem para que vocês foquem no que importa: dados, modelo e métricas.
 
 ---
 
@@ -15,7 +21,7 @@ Código casca em FastAPI para o componente de Machine Learning do projeto integr
 | C | Análise de Sentimento / Texto | `POST /analyze` |
 | D | Busca Semântica | `GET /search` |
 
-Escolha **apenas um**. A escolha deve ser registrada no arquivo `BLOCO_ESCOLHIDO.md` (ver passo 4 abaixo).
+Escolha **apenas um**.
 
 ---
 
@@ -27,48 +33,54 @@ Escolha **apenas um**. A escolha deve ser registrada no arquivo `BLOCO_ESCOLHIDO
 
 ### 2. Instalação
 ```bash
-python -m venv .venv
-source .venv/bin/activate          # no Windows: .venv\Scripts\activate
+python -m venv venv
+source venv/bin/activate          # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-> Cada bloco tem dependências adicionais comentadas no `requirements.txt`. Descomente apenas as do seu bloco.
+> Cada bloco tem dependências adicionais comentadas no `requirements.txt`. Descomente apenas as do seu bloco e da sua fonte de dados.
 
-### 3. Execução
+### 3. Configuração
+Edite `app/main.py` (linha `BLOCO_ATIVO`) e `app/config.py` (linha `DATASOURCE_KIND`) conforme o que sua equipe escolheu.
+
+### 4. Treino
+```bash
+python train.py
+# ou forçando bloco/fonte:
+python train.py --bloco A --datasource csv
+```
+
+### 5. Servir
 ```bash
 uvicorn app.main:app --reload --port 8000
 ```
 
 A documentação interativa fica em `http://localhost:8000/docs`.
 
-### 4. Registrar o bloco escolhido
-Crie um arquivo `BLOCO_ESCOLHIDO.md` na raiz do projeto contendo:
-
-```
-Bloco escolhido: <A | B | C | D>
-Justificativa de domínio: <2-3 frases ligando o bloco ao projeto da equipe>
-Integrantes: <nomes>
-```
-
 ---
 
-## Estrutura
+## Estrutura do projeto
 
 ```
 ml_service/
 ├── app/
-│   ├── main.py              # FastAPI: rotas, CORS, healthcheck
-│   ├── config.py            # configurações (semente, paths)
-│   ├── schemas.py           # modelos Pydantic de request/response
+│   ├── main.py                       # FastAPI: rotas, CORS, healthcheck
+│   ├── config.py                     # constantes globais (SEED, paths, fonte)
+│   ├── schemas.py                    # contratos Pydantic
+│   ├── datasources/                  # ⭐ camada de fontes de dados
+│   │   ├── base.py                   # Protocol + factory
+│   │   ├── local_csv.py              # CSVs em data/
+│   │   ├── database.py               # SQLAlchemy → BD do projeto
+│   │   └── public_api.py             # IBGE, PRF, dados.gov.br, …
 │   └── blocks/
-│       ├── block_a_recommender.py     # Bloco A
-│       ├── block_b_classifier.py      # Bloco B
-│       ├── block_c_text.py            # Bloco C
-│       └── block_d_search.py          # Bloco D
-├── data/                    # datasets (NÃO versionar arquivos pesados)
-├── models/                  # modelos serializados
-├── tests/                   # testes mínimos
-├── train.py                 # script de treino (entry point)
+│       ├── block_a_recommender.py    # Bloco A — colaborativa item-based
+│       ├── block_b_classifier.py     # Bloco B — Logistic Regression
+│       ├── block_c_text.py           # Bloco C — léxico → pysentimiento
+│       └── block_d_search.py         # Bloco D — TF-IDF → embeddings
+├── data/                             # datasets (ignorar arquivos pesados)
+├── models/                           # modelos serializados
+├── tests/                            # smoke tests
+├── train.py                          # entry point de treino
 ├── requirements.txt
 └── README.md
 ```
@@ -77,32 +89,30 @@ ml_service/
 
 ## Fluxo de trabalho recomendado
 
-1. **Semana 1** — escolha do bloco, dataset definido, `BLOCO_ESCOLHIDO.md` criado.
-2. **Semana 2** — EDA em notebook (pasta `notebooks/`, criada por vocês), salvar gráficos em `data/`.
-3. **Semana 3** — implementar o **baseline** no bloco escolhido. Rodar `python train.py` e gerar `models/<bloco>.joblib` ou índice equivalente.
-4. **Semana 4** — refinar o modelo, registrar métricas em `models/metrics.json`.
-5. **Semana 5** — integrar com a aplicação web do projeto integrador. Habilitar CORS para o domínio da equipe.
+1. **Semana 1** — escolher bloco e fonte. Criar `BLOCO_ESCOLHIDO.md` com:
+   - bloco escolhido
+   - fonte de dados (csv/database/api)
+   - justificativa de domínio (2–3 frases)
+   - integrantes
+2. **Semana 2** — EDA em notebook (`notebooks/`). Inclua gráficos no relatório.
+3. **Semana 3** — implementar o **baseline** no bloco escolhido. Rodar `python train.py`.
+4. **Semana 4** — refinar o modelo. Registrar métricas em `models/metrics.json`.
+5. **Semana 5** — integração:
+   - Grupo 1: chamar a API a partir da aplicação web.
+   - Grupo 2: produzir um notebook ou dashboard que demonstre o uso real.
 6. **Semana 6** — polimento, README final, gravação de demo.
 
 ---
 
-## Integração com a aplicação web
+## Para o Grupo 2 (sem aplicação web)
 
-O microsserviço roda em uma porta separada (8000 por padrão). A aplicação web do projeto integrador deve consumir os endpoints via `fetch` (JS), `axios`, ou cliente HTTP equivalente da linguagem do backend de vocês.
+A entrega do Grupo 2 substitui a "integração com a app web" por um **notebook de avaliação** que:
 
-Exemplo a partir de um frontend JS:
+1. Roda queries reais contra o microsserviço (via `requests` ou `httpx`).
+2. Apresenta métricas e visualizações.
+3. Discute pelo menos um caso de uso prático ("se este sistema fosse plugado no portal X, ele permitiria…").
 
-```javascript
-const resp = await fetch("http://localhost:8000/predict", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ features: { idade: 35, renda: 4200 } })
-});
-const data = await resp.json();
-console.log(data.prediction);
-```
-
-Em produção, a URL do microsserviço deve ser uma variável de ambiente do frontend.
+Veja o documento de especificação `Projeto_Integrador_ML_Grupo2_Dados_Publicos.pdf`.
 
 ---
 
@@ -112,9 +122,12 @@ Em produção, a URL do microsserviço deve ser uma variável de ambiente do fro
 - Semente aleatória **fixa** em todo treino (`SEED = 42` em `app/config.py`).
 - Métricas registradas em `models/metrics.json` com data e versão.
 - Commits frequentes — média mínima de 1 commit por integrante por semana.
+- **NUNCA** committar credenciais. `.env` no `.gitignore`.
 
 ---
 
 ## Suporte
 
 Dúvidas técnicas: aulas de IA e horário de atendimento.
+
+Bloqueios acima de 48h sem progresso devem ser comunicados ao professor imediatamente.
