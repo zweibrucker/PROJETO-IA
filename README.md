@@ -1,4 +1,4 @@
-# Microsserviço de ML — Projeto (v2)
+# Microsserviço de ML – Projeto (v2)
 
 Código casca em FastAPI para o componente de Machine Learning do projeto integrador. **Esta versão (v2)** introduz uma camada de fontes de dados (`app/datasources/`) que permite o mesmo código rodar em três cenários:
 
@@ -67,7 +67,7 @@ ml_service/
 │   ├── main.py                       # FastAPI: rotas, CORS, healthcheck
 │   ├── config.py                     # constantes globais (SEED, paths, fonte)
 │   ├── schemas.py                    # contratos Pydantic
-│   ├── datasources/                  # ⭐ camada de fontes de dados
+│   ├── datasources/                  # camada de fontes de dados
 │   │   ├── base.py                   # Protocol + factory
 │   │   ├── local_csv.py              # CSVs em data/
 │   │   ├── database.py               # SQLAlchemy → BD do projeto
