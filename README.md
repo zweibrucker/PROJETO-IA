@@ -128,6 +128,4 @@ Veja o documento de especificação `Projeto_Integrador_ML_Grupo2_Dados_Publicos
 
 ## Suporte
 
-Dúvidas técnicas: aulas de IA e horário de atendimento.
-
-Bloqueios acima de 48h sem progresso devem ser comunicados ao professor imediatamente.
+Dúvidas técnicas: aulas de IA.
