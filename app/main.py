@@ -62,7 +62,7 @@ from app.blocks import (
 # Equipes que tentarem chamar um endpoint de bloco diferente do ativo
 # recebem HTTP 404. Isso evita que o Bloco B treinado seja chamado por
 # engano via endpoint do Bloco A.
-BLOCO_ATIVO: str = "A"   # <-- ALTERE AQUI
+BLOCO_ATIVO: str = "B"   # Bloco B — Classificação PRF
 
 app = FastAPI(
     title="ML Service — Projeto Integrador",
@@ -177,6 +177,37 @@ def predict(req: PredictRequest) -> PredictResponse:
         raise HTTPException(
             status_code=422,
             detail=f"Feature obrigatória ausente: {e}",
+        )
+
+
+@app.post(
+    "/train",
+    tags=["Bloco B — Classificação"],
+)
+def train() -> dict:
+    """Dispara o treino completo (baseline + Random Forest) e retorna métricas.
+
+    Treina Regressão Logística e Random Forest nos dados da PRF 2023.
+    Salva os modelos em models/ e atualiza models/metrics.json.
+
+    Códigos de status:
+        200 OK             — treino concluído, métricas retornadas.
+        404 Not Found      — Bloco B não está ativo.
+        503 Service Unavailable — erro durante o treino.
+    """
+    if BLOCO_ATIVO != "B":
+        raise HTTPException(status_code=404, detail="Bloco B não está ativo.")
+    try:
+        return block_b_classifier.train()
+    except FileNotFoundError as e:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Arquivo não encontrado durante treino: {e}",
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Erro durante treino: {e}",
         )
 
 

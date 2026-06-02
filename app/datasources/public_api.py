@@ -193,27 +193,50 @@ class PublicApiSource:
     # =============================================================
     @staticmethod
     def _fetch_prf_acidentes() -> pd.DataFrame:
-        """Acidentes registrados pela PRF.
+        """Acidentes registrados pela PRF em rodovias federais — ano 2023.
 
-        A PRF disponibiliza CSVs anuais em:
-            https://www.gov.br/prf/pt-br/acesso-a-informacao/dados-abertos
-        Como o link muda a cada ano, configure a URL via env var:
-            export ML_PRF_CSV_URL="https://.../datatran2024.csv"
+        Fonte oficial:
+            https://www.gov.br/prf/pt-br/acesso-a-informacao/dados-abertos/dados-abertos-da-prf
+        Arquivo utilizado: acidentes2023_todas_causas_tipos.csv
+        Data de acesso: 2026-06-02
+        Licença: Dados Abertos do Governo Federal (dados.gov.br)
+
+        O arquivo local é carregado de data/raw/acidentes2023.csv.
+        Separador: ponto-e-vírgula (;). Encoding: latin-1.
         """
-        url = os.environ.get("ML_PRF_CSV_URL")
-        if not url:
-            raise RuntimeError(
-                "Defina ML_PRF_CSV_URL apontando para o CSV anual da PRF. "
-                "Veja https://www.gov.br/prf/pt-br/acesso-a-informacao/dados-abertos"
+        csv_local = DATA_DIR / "raw" / "acidentes2023.csv"
+        if csv_local.exists():
+            print(f"[PRF] Carregando CSV local: {csv_local}")
+            df = pd.read_csv(csv_local, sep=";", encoding="latin-1", low_memory=False)
+        else:
+            # Fallback: download direto do Google Drive (arquivo ZIP)
+            url = os.environ.get(
+                "ML_PRF_CSV_URL",
+                "https://drive.google.com/uc?export=download&id=1-caam_dahYOf2eorq4mez04Om6DD5d_3"
             )
-        df = _cached_csv(
-            url, "prf_acidentes",
-            sep=";", encoding="latin-1", low_memory=False,
-        )
-        # Normaliza nome de colunas frequentes do dataset PRF.
-        # Bloco B: classificacao_acidente é uma boa target (com vítima/sem vítima/fatal).
-        if "classificacao_acidente" in df.columns:
-            df = df.rename(columns={"classificacao_acidente": "target"})
+            print(f"[PRF] CSV local não encontrado. Baixando de: {url}")
+            import urllib.request
+            import io
+            import zipfile
+
+            req = urllib.request.Request(url, headers={"User-Agent": "ProjetoIntegradorML/0.2"})
+            with urllib.request.urlopen(req, timeout=300) as resp:
+                data = resp.read()
+
+            if data[:2] == b'PK':
+                with zipfile.ZipFile(io.BytesIO(data)) as zf:
+                    csv_name = [f for f in zf.namelist() if f.endswith(".csv")][0]
+                    with zf.open(csv_name) as f:
+                        raw = f.read()
+            else:
+                raw = data
+
+            csv_local.parent.mkdir(parents=True, exist_ok=True)
+            csv_local.write_bytes(raw)
+            df = pd.read_csv(io.BytesIO(raw), sep=";", encoding="latin-1", low_memory=False)
+            print(f"[PRF] Salvo em {csv_local}")
+
+        print(f"[PRF] Dataset carregado: {df.shape[0]:,} linhas × {df.shape[1]} colunas")
         return df
 
     @staticmethod

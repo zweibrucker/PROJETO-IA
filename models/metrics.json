@@ -1,0 +1,41 @@
+{
+  "baseline_logreg": {
+    "model": "LogisticRegression",
+    "accuracy": 0.4141,
+    "precision_macro": 0.4002,
+    "recall_macro": 0.4469,
+    "f1_macro": 0.3542,
+    "random_state": 42,
+    "data_access_date": "2026-06-02"
+  },
+  "random_forest": {
+    "model": "RandomForestClassifier",
+    "n_estimators": 100,
+    "accuracy": 0.9208,
+    "precision_macro": 0.8516,
+    "recall_macro": 0.8965,
+    "f1_macro": 0.8724,
+    "cv_f1_macro_mean": 0.8608,
+    "cv_f1_macro_std": 0.0013,
+    "cv_scores": [
+      0.8614,
+      0.8628,
+      0.8611,
+      0.8595,
+      0.8594
+    ],
+    "feature_importances": [
+      0.1437861641203478,
+      0.1648830461253341,
+      0.14925875529120058,
+      0.05343348480285564,
+      0.08650313379913108,
+      0.03417403416653855,
+      0.16059918430680997,
+      0.026284070482568807,
+      0.18107812690521347
+    ],
+    "random_state": 42,
+    "data_access_date": "2026-06-02"
+  }
+}
